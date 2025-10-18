@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Login — Student CRUD</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Student CRUD</div>
+      <nav class="nav-right"><span class="muted small">Admin Portal</span></nav>
+    </div>
+  </header>
+
+  <main class="centered-container">
+    <div class="card login-card">
+      <h1 class="brand large">Admin Login</h1>
+      <p class="muted">Enter admin credentials to manage student records</p>
+
+      <form id="loginForm" class="form">
+        <label>Username
+          <input type="text" id="username" required autocomplete="username" placeholder="admin">
+        </label>
+
+        <label>Password
+          <input type="password" id="password" required autocomplete="current-password" placeholder="admin123">
+        </label>
+
+        <div class="buttons">
+          <button type="submit" class="btn primary">Login</button>
+          <button type="button" id="demoBtn" class="btn outline">Fill Demo</button>
+        </div>
+
+        <p class="info small muted">default credentials: <strong>admin</strong> / <strong>admin123</strong></p>
+      </form>
+    </div>
+  </main>
+
+  <footer class="footer muted small">Full-width dashboard • Orange + Black theme</footer>
+
+  <script src="assets/script.js"></script>
+  <script>
+    // redirect to dashboard if already logged in
+    if (isLoggedIn()) {
+      location.href = 'form.html';
+    }
+
+    document.getElementById('demoBtn').addEventListener('click', () => {
+      document.getElementById('username').value = 'admin';
+      document.getElementById('password').value = 'admin123';
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      if (login(u, p)) {
+        // go to main form after login
+        location.href = 'form.html';
+      } else {
+        alert('Invalid credentials');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Students — Student CRUD</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Student CRUD</div>
+      <nav>
+        <a href="form.html" class="nav-link">Add Student</a>
+        <a href="students.html" class="nav-link active">Students</a>
+        <a href="#" id="logoutLink" class="nav-link">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-container full-width">
+    <section class="main-full card">
+      <div class="flex-between">
+        <h2>Student Records (<span id="count">0</span>)</h2>
+
+        <div class="controls">
+          <input id="search" placeholder="Search name, number, email..." />
+          <button id="exportCsv" class="btn outline">Export CSV</button>
+          <button id="clearAll" class="btn danger">Clear All</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="tableWrap"></div>
+    </section>
+  </main>
+
+  <script src="assets/script.js"></script>
+  <script>
+    if (!isLoggedIn()) location.href = 'login.html';
+
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      logout();
+      location.href = 'login.html';
+    });
+
+    const searchEl = document.getElementById('search');
+    searchEl.addEventListener('input', renderTableDebounced);
+
+    document.getElementById('exportCsv').addEventListener('click', () => exportCSV());
+    document.getElementById('clearAll').addEventListener('click', () => {
+      if (!confirm('Delete ALL student records?')) return;
+      clearAllStudents();
+      renderTable();
+    });
+
+    // initial render
+    renderTable();
+
+    // debounce for search
+    let debounceTimer;
+    function renderTableDebounced() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderTable, 200);
+    }
+
+    // Inline edit handlers (used by renderTable in this file)
+    function handleEdit(id, tr) {
+      const s = getStudent(id);
+      if (!s) return;
+      tr.innerHTML = `
+        <td><input class="tbl-input" data-field="name" value="${escapeHtml(s.name)}"></td>
+        <td><input class="tbl-input" data-field="number" value="${escapeHtml(s.number)}"></td>
+        <td><input class="tbl-input" data-field="email" value="${escapeHtml(s.email)}"></td>
+        <td><input class="tbl-input" data-field="className" value="${escapeHtml(s.className)}"></td>
+        <td><textarea class="tbl-input" data-field="address">${escapeHtml(s.address)}</textarea></td>
+        <td class="actions">
+          <button class="btn primary save">Save</button>
+          <button class="btn outline cancel">Cancel</button>
+        </td>
+      `;
+      tr.querySelector('.cancel').addEventListener('click', renderTable);
+      tr.querySelector('.save').addEventListener('click', () => {
+        const inputs = tr.querySelectorAll('.tbl-input');
+        const updated = { ...s };
+        inputs.forEach(inp => {
+          const field = inp.getAttribute('data-field');
+          updated[field] = inp.value.trim();
+        });
+        if (!updated.name || !updated.number) {
+          alert('Name and Number are required.');
+          return;
+        }
+        updateStudent(updated);
+        renderTable();
+      });
+    }
+
+    function handleDelete(id) {
+      if (!confirm('Delete this student?')) return;
+      deleteStudent(id);
+      renderTable();
+    }
+
+    // renderTable function (shared logic)
+    function renderTable() {
+      const container = document.getElementById('tableWrap');
+      const all = getAllStudents();
+      const q = (searchEl.value || '').trim().toLowerCase();
+      const filtered = all.filter(s => {
+        if (!q) return true;
+        return (s.name||'').toLowerCase().includes(q)
+          || (s.number||'').toLowerCase().includes(q)
+          || (s.email||'').toLowerCase().includes(q)
+          || (s.className||'').toLowerCase().includes(q)
+          || (s.address||'').toLowerCase().includes(q);
+      });
+
+      document.getElementById('count').innerText = filtered.length;
+
+      if (!filtered.length) {
+        container.innerHTML = `<div class="empty">No records found</div>`;
+        return;
+      }
+
+      let html = `<table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:18%;">Name</th>
+            <th style="width:12%;">Number</th>
+            <th style="width:18%;">Email</th>
+            <th style="width:10%;">Class</th>
+            <th style="width:32%;">Address</th>
+            <th style="width:10%;">Actions</th>
+          </tr>
+        </thead><tbody>`;
+      filtered.forEach(s => {
+        html += `<tr data-id="${s.id}">
+          <td>${escapeHtml(s.name)}</td>
+          <td>${escapeHtml(s.number)}</td>
+          <td>${escapeHtml(s.email)}</td>
+          <td>${escapeHtml(s.className)}</td>
+          <td style="max-width:760px">${escapeHtml(s.address)}</td>
+          <td class="actions">
+            <button class="btn primary edit">Edit</button>
+            <button class="btn danger delete">Delete</button>
+          </td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+
+      // attach handlers
+      container.querySelectorAll('tr[data-id]').forEach(tr => {
+        const id = tr.getAttribute('data-id');
+        tr.querySelector('.edit').addEventListener('click', () => handleEdit(id, tr));
+        tr.querySelector('.delete').addEventListener('click', () => handleDelete(id));
+      });
+    }
+  </script>
+</body>
+</html>
